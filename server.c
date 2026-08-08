@@ -32,7 +32,7 @@ void* client_handler(void* arg) {
     pthread_detach(pthread_self());
 
     Client *client = (Client*)arg; // Перевожу тип аргумента из пустотного в тип-структуру идентифицирующую клиента. Здесь client - указатель на переданную в поток структуру клиента
-    int client_fd = client->fd; // Извлекаю файловый дескриптор сокета клиента из переданной в поток структуры
+    int client_fd = client->fd;    // Извлекаю файловый дескриптор сокета клиента из переданной в поток структуры
     char buffer[1000]; // Буфер приема. Клиент может набрать не больше 1000 символов с учетом того, что программа прилепит в конец один символ конца строка '/0'
 	  char buffer_and_name[MAX_BUFFER]; // Буфер, который будет хранить и ник клиента и его сообщение
     while (1) {
@@ -41,7 +41,7 @@ void* client_handler(void* arg) {
 		  // recv_buffer без оператора &, так как переменная buffer уже содержит адрес нулевой ячейки массива
 		  // последний аргумент - 0 означает, что флаги не требуются
 		  if (bytes_read_count == 0){
-		  	printf("The server disconnected, recv()\n");
+		  	printf("The client disconnected, recv()\n");
 		  	break;
 		  }
 		  else if (bytes_read_count < 0){
@@ -56,7 +56,7 @@ void* client_handler(void* arg) {
       // Произвожу рассылку сообщения остальным клиентам чата
       // Блокирую доступ к списку клиентов, чтобы основной поток не удалял и не добавлял клиентов, пока рассылка не завершится, на всякий случай проверяю на наличие ошибок
 	    if (pthread_mutex_lock(&clients_list_mutex) != 0){
-		      fprintf(stderr, "Error: Ошибка pthread_mutex_lock(&clients_list_mutex)"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
+		      fprintf(stderr, "Error: Ошибка pthread_mutex_lock(&clients_list_mutex)\n"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
 	    }
 
       for (int i = 0; i < client_count; i++){
@@ -73,9 +73,9 @@ void* client_handler(void* arg) {
 	  }
 
     // Избавляюсь от отключившегося клиента
-    // Удаляю клиента из списка
+    //Удаляю клиента из списка
     	if (pthread_mutex_lock(&clients_list_mutex) != 0){
-		      fprintf(stderr, "Error: Ошибка pthread_mutex_lock(&clients_list_mutex)"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
+		      fprintf(stderr, "Error: Ошибка pthread_mutex_lock(&clients_list_mutex)\n"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
 	    }
 
       for (int i = 0; i < client_count; i++){
@@ -88,7 +88,7 @@ void* client_handler(void* arg) {
 
       // Рассылка окончена. Разблокирую доступ к списку клиентов
       if (pthread_mutex_unlock(&clients_list_mutex) != 0){
-		      fprintf(stderr, "Error: Ошибка pthread_mutex_unlock(&clients_list_mutex)"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
+		      fprintf(stderr, "Error: Ошибка pthread_mutex_unlock(&clients_list_mutex)\n"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
 	    }
 
     close(client_fd);
@@ -132,7 +132,7 @@ int main() {
       close(server_fd); // Закрываю сокет
       return -1;
     }
-    printf("Сокет переведен в пассивный режим успешно, listen()");
+    printf("Сокет переведен в пассивный режим успешно, listen()\n");
     
     // Адрес сокета клиента. Функция accept(), при подключении клиета, запишет IPv4 адрес и порт в эту структуру
     struct sockaddr_in client_addr;
@@ -153,19 +153,19 @@ int main() {
       // Клиентов не может быть больше MAX_CLIENTS, чтобы не выйти за границы массива
       // Блокирую список клиентов для чтения (на случай, если второй поток в это время будет удалять из него клиента)
       if (pthread_mutex_lock(&clients_list_mutex) != 0){
-		      fprintf(stderr, "Error: Ошибка pthread_mutex_lock(&clients_list_mutex)"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
+		      fprintf(stderr, "Error: Ошибка pthread_mutex_lock(&clients_list_mutex)\n"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
 	    }
       if (client_count >= MAX_CLIENTS) {
         send(client_fd, "Server full", 11, 0); // Сообщаю клиенту, что сервер переполнен
         close(client_fd); // Закрываю сокет отвергнутого клиента. Клиент поймет, что связь разорвана, так как в его коде есть условие, проверяющее recv, возвращающее 0 - получение пакета FIN
         if (pthread_mutex_unlock(&clients_list_mutex) != 0){
-		      fprintf(stderr, "Error: Ошибка pthread_mutex_unlock(&clients_list_mutex)"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
+		      fprintf(stderr, "Error: Ошибка pthread_mutex_unlock(&clients_list_mutex)\n"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
 	      }
         continue; // Перехожу к блокирующему accept()
       }
       // Разблокирую список клиентов
       if (pthread_mutex_unlock(&clients_list_mutex) != 0){
-		      fprintf(stderr, "Error: Ошибка pthread_mutex_unlock(&clients_list_mutex)"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
+		      fprintf(stderr, "Error: Ошибка pthread_mutex_unlock(&clients_list_mutex)\n"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
 	    }
 
       // Извлекаю IP-адрес и порт клиента из структуры - адреса сокета и выводят в терминал
@@ -175,7 +175,7 @@ int main() {
           perror("Ошибка перевода IP-адреса клиента из сетевого формата в строковый\n");
       };
 
-      printf("Входящее соединение принято успешно, accept(). Получен клиентский файловый дескриптор сокета: %d. IP-адрес клиента: %s, порт: %d. Количество подключенных клиентов: %d\n", client_fd, client_ip, client_port, client_count);
+      printf("Входящее соединение принято успешно, accept(). Получен клиентский файловый дескриптор сокета: %d. IP-адрес клиента: %s, порт: %d. Количество подключенных клиентов: %d\n", client_fd, client_ip, client_port, client_count + 1);
 
       char nick[32];
       // Возвращает количество принятых bytes
@@ -195,7 +195,7 @@ int main() {
 
       // Блокирую список клиентов, чтобы добавить нового клиента
       if (pthread_mutex_lock(&clients_list_mutex) != 0){
-		      fprintf(stderr, "Error: Ошибка pthread_mutex_lock(&clients_list_mutex)"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
+		      fprintf(stderr, "Error: Ошибка pthread_mutex_lock(&clients_list_mutex)\n"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
 	    }
 
       // Выделяю память для нового клиента динамически, чтобы передать его потоку
@@ -208,7 +208,7 @@ int main() {
 
       // Разблокирую список клиентов
       if (pthread_mutex_unlock(&clients_list_mutex) != 0){
-		      fprintf(stderr, "Error: Ошибка pthread_mutex_unlock(&clients_list_mutex)"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
+		      fprintf(stderr, "Error: Ошибка pthread_mutex_unlock(&clients_list_mutex)\n"); // perror использует errno, но pthread_create её НЕ устанавливает, поэтому fprintf
 	    }
  
 	    // Создаю новый поток

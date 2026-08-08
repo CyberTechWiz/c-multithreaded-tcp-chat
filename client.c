@@ -20,7 +20,7 @@
 #define ANSI_COLOR_RESET   "\033[0m"
 
 // IP-адрес сервера (поставь свой)
-#define SERVER_IP "192.168.0.14"
+#define SERVER_IP "192.168.0.16"
 
 #define MAX_BUFFER 1033 // Клиент сможет набрать максимум 1000 символов. 1033: 1000 на сообщение клиента, 32 на ник, 1 на символ конца строки
 
@@ -32,7 +32,7 @@ void* receive_handler(void* arg) {
 		// Возвращает количество принятых bytes
 		ssize_t bytes_read_count = recv(client_fd, recv_buffer, sizeof(recv_buffer) - 1, 0); 
 		// recv_buffer без оператора &, так как переменная recv_buffer уже содержит адрес нулевой ячейки массива
-		// последний аргумент - 0 означает, что флаги не требуются
+		// Последний аргумент - 0 означает, что флаги не требуются
 		if (bytes_read_count == 0){
 			printf(ANSI_COLOR_RED "The server disconnected, recv()" ANSI_COLOR_RESET "\n");
 			break;
@@ -100,7 +100,7 @@ int main() {
     printf(ANSI_COLOR_GREEN "Соединение с сервером установлено, connect()" ANSI_COLOR_RESET "\n");
     // Передаю серверу ник клиента
     send(client_fd, name, strlen(name), 0);
-    printf(ANSI_PURPLE_ITALIC "Привет. Можешь ввести сообщение и нажать enter чтобы отправить его на сервер. Сервер отправит твоё сообщение всем подключенным к нему клиентам! Для выхода из программы введи" ANSI_COLOR_CYAN "!exit" ANSI_COLOR_RESET "\n");
+    printf(ANSI_PURPLE_ITALIC "Привет. Можешь ввести сообщение и нажать enter чтобы отправить его на сервер. Сервер отправит твоё сообщение всем подключенным к нему клиентам! Для выхода из программы введи " ANSI_COLOR_CYAN "!exit" ANSI_COLOR_RESET "\n");
 
 	// Реализую многопоточность, чтоб клиент мог одновременно получать и отправлять сообщения
 	// Создаю новый поток
@@ -120,7 +120,7 @@ int main() {
     // fgets читает данные из файлового потока  ввода (stdin) в send_buffer . Возвращает указатель на переданный буфер (send_buffer), см. man 3 fgets. Также функция всегда добавляет символ конца строки '\0', так что читает ровно send_buffer - 1 символов из потока.
     if (fgets(send_buffer, sizeof(send_buffer), stdin) == NULL) {
       if (ferror(stdin)) {
-        perror("Ошибка чтения из stdin");
+        perror("Ошибка чтения из stdin\n");
       }
       break;
 		}
